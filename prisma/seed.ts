@@ -1,5 +1,6 @@
 // Seed demo data. Run with: npm run db:seed
 // Creates a demo user with ~6 months of transactions + journal entries + snapshots.
+import "dotenv/config"; // tsx doesn't load .env — must be first
 import { PrismaClient, Prisma } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { deriveSnapshots } from "../src/lib/calc/portfolio";

@@ -1,3 +1,4 @@
+import "dotenv/config"; // must be first — Prisma 7 evaluates this file before its own .env loading
 import path from "node:path";
 import { defineConfig } from "prisma/config";
 
