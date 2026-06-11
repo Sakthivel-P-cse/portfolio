@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSnapshots } from "@/hooks/use-portfolio";
 import { useTransactions } from "@/hooks/use-transactions";
 import { TopTable } from "@/components/analytics/top-table";
@@ -9,9 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { SnapshotGranularity } from "@/types";
 
 // Charts touch the DOM/canvas — load them client-only to avoid SSR mismatch.
-const MoneyFlowChart = dynamic(
-  () => import("@/components/charts/money-flow-chart").then((m) => m.MoneyFlowChart),
-  { ssr: false, loading: () => <Skeleton className="h-[440px] rounded-2xl" /> },
+const EquityCurveChart = dynamic(
+  () => import("@/components/charts/equity-curve-chart").then((m) => m.EquityCurveChart),
+  { ssr: false, loading: () => <Skeleton className="h-[760px] rounded-2xl" /> },
 );
 const GrowthChart = dynamic(
   () => import("@/components/charts/growth-chart").then((m) => m.GrowthChart),
@@ -24,6 +25,7 @@ const CashflowChart = dynamic(
 
 export default function AnalyticsPage() {
   const [granularity, setGranularity] = useState<SnapshotGranularity>("DAY");
+  const qc = useQueryClient();
   const snapshots = useSnapshots(granularity);
   const transactions = useTransactions({ limit: 2000 });
 
@@ -34,11 +36,15 @@ export default function AnalyticsPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <MoneyFlowChart
+      <EquityCurveChart
         data={data}
         transactions={txns}
         granularity={granularity}
         onGranularityChange={setGranularity}
+        onRefresh={() => {
+          qc.invalidateQueries({ queryKey: ["snapshots"] });
+          qc.invalidateQueries({ queryKey: ["transactions"] });
+        }}
       />
 
       <div className="grid gap-6 xl:grid-cols-2">
