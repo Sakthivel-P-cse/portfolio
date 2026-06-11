@@ -13,8 +13,7 @@ export default function LoginPage() {
   async function signInWithGoogle() {
     setLoading(true);
     const supabase = createClient();
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+    const siteUrl = window.location.origin;
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${siteUrl}/auth/callback` },
