@@ -1,0 +1,197 @@
+// Portfolio Tracker + Trading Journal — Prisma schema
+// Money is Decimal(18,2) in INR. Charts render from PortfolioSnapshot, never raw transactions.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Enums ─────────────────────────────────────────────
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  PROFIT
+  LOSS
+}
+
+enum TradeType {
+  LONG
+  SHORT
+  SCALP
+  SWING
+  INTRADAY
+  OPTIONS
+  FUTURES
+}
+
+enum TradeOutcome {
+  PROFIT
+  LOSS
+  BREAKEVEN
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  UNDO
+  REDO
+  IMPORT
+}
+
+enum EntityType {
+  TRANSACTION
+  JOURNAL_ENTRY
+  SETTINGS
+}
+
+enum SnapshotGranularity {
+  DAY
+  WEEK
+  MONTH
+}
+
+enum ImportStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+// ── Models ────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid()) // mirrors Supabase auth.users.id
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions   Transaction[]
+  journalEntries JournalEntry[]
+  snapshots      PortfolioSnapshot[]
+  imports        ImportHistory[]
+  auditLogs      AuditLog[]
+  settings       Settings?
+
+  @@index([email])
+}
+
+model Transaction {
+  id        String          @id @default(uuid())
+  userId    String
+  date      DateTime
+  amount    Decimal         @db.Decimal(18, 2)
+  type      TransactionType
+  reason    String?
+  notes     String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, type])
+}
+
+model JournalEntry {
+  id            String       @id @default(uuid())
+  userId        String
+  date          DateTime
+  amount        Decimal      @db.Decimal(18, 2)
+  tradeType     TradeType
+  outcome       TradeOutcome
+  reason        String?
+  notes         String?
+  mistakeMade   String?
+  lessonLearned String?
+  screenshotUrl String?
+  tags          String[]     @default([])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, outcome])
+}
+
+// Pre-aggregated equity curve. One row per (user, granularity, date).
+model PortfolioSnapshot {
+  id             String              @id @default(uuid())
+  userId         String
+  date           DateTime
+  granularity    SnapshotGranularity
+  portfolioValue Decimal             @db.Decimal(18, 2)
+  equity         Decimal             @db.Decimal(18, 2)
+  returnPct      Decimal             @db.Decimal(10, 4)
+  netDeposits    Decimal             @default(0) @db.Decimal(18, 2)
+  netPnl         Decimal             @default(0) @db.Decimal(18, 2)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, granularity, date])
+  @@index([userId, granularity, date])
+}
+
+model ImportHistory {
+  id           String       @id @default(uuid())
+  userId       String
+  fileName     String
+  rowCount     Int          @default(0)
+  successCount Int          @default(0)
+  errorCount   Int          @default(0)
+  status       ImportStatus @default(PENDING)
+  errors       Json? // array of { row, message }
+  createdIds   String[]     @default([]) // transaction ids created, for rollback
+  createdAt    DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  userId     String
+  action     AuditAction
+  entityType EntityType
+  entityId   String
+  oldData    Json?
+  newData    Json?
+  // Undo/redo bookkeeping: an entry is "undone" when undoneAt is set.
+  undoneAt   DateTime?
+  createdAt  DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, entityType, entityId])
+}
+
+model Settings {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  theme           Theme    @default(DARK)
+  currency        String   @default("INR")
+  timezone        String   @default("Asia/Kolkata")
+  defaultRange    String   @default("3M") // 1W, 1M, 3M, 6M, 1Y, ALL
+  autoRefreshSecs Int      @default(0) // 0 = off
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
