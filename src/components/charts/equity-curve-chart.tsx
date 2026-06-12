@@ -289,6 +289,7 @@ export function EquityCurveChart({
       rightPriceScale: {
         borderColor: "rgba(255,255,255,0.08)",
         scaleMargins: { top: 0.12, bottom: 0.08 },
+        autoScale: false,
       },
       timeScale: {
         borderColor: "rgba(255,255,255,0.08)",

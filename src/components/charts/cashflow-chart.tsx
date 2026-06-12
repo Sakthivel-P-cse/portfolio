@@ -72,7 +72,7 @@ export function CashflowChart({ transactions }: Props) {
         horzLines: { color: "rgba(255,255,255,0.05)" },
       },
       crosshair: { mode: CrosshairMode.Magnet },
-      rightPriceScale: { borderColor: "rgba(255,255,255,0.1)" },
+      rightPriceScale: { borderColor: "rgba(255,255,255,0.1)", autoScale: false },
       timeScale: { borderColor: "rgba(255,255,255,0.1)", timeVisible: true },
       handleScroll: true,
       handleScale: true,

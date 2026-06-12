@@ -47,7 +47,7 @@ export function GrowthChart({ data }: Props) {
         horzLines: { color: "rgba(0,0,0,0.05)" },
       },
       crosshair: { mode: CrosshairMode.Normal },
-      rightPriceScale: { borderColor: "rgba(0,0,0,0.1)" },
+      rightPriceScale: { borderColor: "rgba(0,0,0,0.1)", autoScale: false },
       timeScale: { borderColor: "rgba(0,0,0,0.1)", timeVisible: true },
       handleScroll: true,
       handleScale: true,
