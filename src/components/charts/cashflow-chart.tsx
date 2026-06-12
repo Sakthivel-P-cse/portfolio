@@ -35,9 +35,10 @@ export function CashflowChart({ transactions }: Props) {
   const [empty, setEmpty] = useState(transactions.length === 0);
 
   const bars = useMemo(() => {
-    // Signed value: deposits/profits up, withdrawals/losses down.
-    const raw = transactions.map((t) => {
-      const up = t.type === "DEPOSIT" || t.type === "PROFIT";
+    const plTransactions = transactions.filter(t => t.type === "PROFIT" || t.type === "LOSS");
+    // Signed value: profits up, losses down.
+    const raw = plTransactions.map((t) => {
+      const up = t.type === "PROFIT";
       return {
         time: toUtcTs(t.date),
         value: up ? t.amount : -t.amount,
@@ -129,7 +130,7 @@ export function CashflowChart({ transactions }: Props) {
 
   return (
     <ChartShell
-      title="Cash Flow"
+      title="Profit & Loss"
       onResetZoom={resetZoom}
       onExportPng={exportPng}
       onApplyAxis={applyAxis}
@@ -137,8 +138,6 @@ export function CashflowChart({ transactions }: Props) {
         <div className="flex gap-3 text-[10px] font-medium">
           <span className="text-[#22c55e]">● Profit</span>
           <span className="text-[#ef4444]">● Loss</span>
-          <span className="text-[#F5B82E]">● Credit</span>
-          <span className="text-white/70">● Withdrawal</span>
         </div>
       }
     >
