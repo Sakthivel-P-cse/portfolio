@@ -46,7 +46,6 @@ import {
 import { useCallbackRef } from "@/hooks/use-callback-ref";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { GoalProgressWidget } from "../analytics/goal-progress";
 import {
   Select,
   SelectContent,
@@ -558,7 +557,7 @@ export function EquityCurveChart({
       )}
     >
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
             TRADE JOURNAL — EQUITY CURVE
@@ -567,22 +566,16 @@ export function EquityCurveChart({
             The equity line color must reflect the nature of that time unit.
           </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-5 xl:w-[480px]">
-          <div className="text-right">
-            <div className="text-[11px] font-medium uppercase tracking-wider text-white/45">
-              Overall P&L (INR)
-            </div>
-            <div className={cn("text-2xl font-bold sm:text-3xl", signClass(netPnl))}>
-              {formatSignedCurrency(netPnl)}
-            </div>
-            <div className={cn("text-sm font-medium", signClass(returnPct))}>
-              ({formatPercent(returnPct, 2)})
-            </div>
+        <div className="text-right">
+          <div className="text-[11px] font-medium uppercase tracking-wider text-white/45">
+            Overall P&L (INR)
           </div>
-          <GoalProgressWidget 
-            transactions={transactions} 
-            currentEquity={Number(last?.portfolioValue ?? 0)} 
-          />
+          <div className={cn("text-2xl font-bold sm:text-3xl", signClass(netPnl))}>
+            {formatSignedCurrency(netPnl)}
+          </div>
+          <div className={cn("text-sm font-medium", signClass(returnPct))}>
+            ({formatPercent(returnPct, 2)})
+          </div>
         </div>
       </div>
 

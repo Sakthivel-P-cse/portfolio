@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSnapshots } from "@/hooks/use-portfolio";
 import { useTransactions } from "@/hooks/use-transactions";
 import { TopTable } from "@/components/analytics/top-table";
+import { GoalProgressWidget } from "@/components/analytics/goal-progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SnapshotGranularity } from "@/types";
 
@@ -35,7 +36,16 @@ export default function AnalyticsPage() {
   const losses = txns.filter((t) => t.type === "LOSS");
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 relative">
+      <div className="flex w-full justify-end">
+        <div className="w-full sm:w-[480px]">
+          <GoalProgressWidget 
+            transactions={txns} 
+            currentEquity={Number(data.at(-1)?.portfolioValue ?? 0)} 
+          />
+        </div>
+      </div>
+
       <EquityCurveChart
         data={data}
         transactions={txns}
