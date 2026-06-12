@@ -46,6 +46,7 @@ import {
 import { useCallbackRef } from "@/hooks/use-callback-ref";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { GoalProgressWidget } from "../analytics/goal-progress";
 import {
   Select,
   SelectContent,
@@ -89,6 +90,7 @@ interface PointMeta {
   pnlDelta: number;
   kind: EventKind;
   color: string;
+  intervalTxs: TransactionDTO[];
 }
 interface MarkerPoint {
   time: UTCTimestamp;
@@ -117,7 +119,6 @@ export function EquityCurveChart({
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   // Lookup maps for tooltip + markers, keyed by UTC-second timestamp.
-  const txnsByTime = useRef<Map<number, TransactionDTO[]>>(new Map());
   const metaByTime = useRef<Map<number, PointMeta>>(new Map());
   const markerPointsRef = useRef<MarkerPoint[]>([]);
   const hoverTimeRef = useRef<number | null>(null);
@@ -233,7 +234,7 @@ export function EquityCurveChart({
       price.value,
     )}</span></div>`;
 
-    const dayTxs = txnsByTime.current.get(timeNum);
+    const dayTxs = meta?.intervalTxs;
     if (dayTxs && dayTxs.length > 0) {
       const flows = dayTxs.filter((t) => t.type === "DEPOSIT" || t.type === "WITHDRAWAL");
       if (flows.length > 0) {
@@ -344,16 +345,6 @@ export function EquityCurveChart({
     const chart = chartRef.current;
     if (!series || !chart) return;
 
-    // Map raw transactions onto their bucket timestamp.
-    const tMap = new Map<number, TransactionDTO[]>();
-    for (const t of transactions) {
-      const time = toUtcTs(t.date) as number;
-      const arr = tMap.get(time) ?? [];
-      arr.push(t);
-      tMap.set(time, arr);
-    }
-    txnsByTime.current = tMap;
-
     const raw = dedupeSortByTime(
       data.map((s) => ({
         time: toUtcTs(s.date) as number,
@@ -365,21 +356,38 @@ export function EquityCurveChart({
     const meta = new Map<number, PointMeta>();
     const markerPts: MarkerPoint[] = [];
 
-    const points = raw.map((p, i) => {
-      const dayTxs = tMap.get(p.time);
+    // First, pre-calculate colors so we can look ahead for segment coloring.
+    // For coarse timeframes (WEEK/MONTH), group all transactions that happened 
+    // since the previous snapshot to correctly classify deposits/withdrawals.
+    const classified = raw.map((p, i) => {
+      const prevTime = i > 0 ? raw[i - 1].time : 0;
+      const intervalTxs = transactions.filter((t) => {
+        const tTime = toUtcTs(t.date) as number;
+        return tTime > prevTime && tTime <= p.time;
+      });
       const pnlDelta = i > 0 ? p.netPnl - raw[i - 1].netPnl : 0;
-      const kind = classifyPoint(dayTxs, pnlDelta);
+      const kind = classifyPoint(intervalTxs, pnlDelta);
       const color = EVENT_COLORS[kind];
+      return { pnlDelta, kind, color, intervalTxs };
+    });
 
-      meta.set(p.time, { pnlDelta, kind, color });
+    const points = raw.map((p, i) => {
+      const { pnlDelta, kind, color, intervalTxs } = classified[i];
+
+      meta.set(p.time, { pnlDelta, kind, color, intervalTxs });
       markerPts.push({ time: p.time as UTCTimestamp, value: p.value, color });
+
+      // In lightweight-charts, the line/area color specified on point `i` styles the
+      // segment starting at `i` and ending at `i+1`. We want that segment to
+      // reflect the event that happens at `i+1` (the delta from `i` to `i+1`).
+      const segmentColor = i < raw.length - 1 ? classified[i + 1].color : color;
 
       return {
         time: p.time as Time,
         value: p.value,
-        lineColor: color,
-        topColor: showArea ? color + "40" : "rgba(0,0,0,0)",
-        bottomColor: showArea ? color + "00" : "rgba(0,0,0,0)",
+        lineColor: segmentColor,
+        topColor: showArea ? segmentColor + "40" : "rgba(0,0,0,0)",
+        bottomColor: showArea ? segmentColor + "00" : "rgba(0,0,0,0)",
       };
     });
 
@@ -550,7 +558,7 @@ export function EquityCurveChart({
       )}
     >
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
             TRADE JOURNAL — EQUITY CURVE
@@ -559,16 +567,22 @@ export function EquityCurveChart({
             The equity line color must reflect the nature of that time unit.
           </p>
         </div>
-        <div className="text-right">
-          <div className="text-[11px] font-medium uppercase tracking-wider text-white/45">
-            Overall P&L (INR)
+        <div className="flex shrink-0 flex-col items-end gap-5 xl:w-[480px]">
+          <div className="text-right">
+            <div className="text-[11px] font-medium uppercase tracking-wider text-white/45">
+              Overall P&L (INR)
+            </div>
+            <div className={cn("text-2xl font-bold sm:text-3xl", signClass(netPnl))}>
+              {formatSignedCurrency(netPnl)}
+            </div>
+            <div className={cn("text-sm font-medium", signClass(returnPct))}>
+              ({formatPercent(returnPct, 2)})
+            </div>
           </div>
-          <div className={cn("text-2xl font-bold sm:text-3xl", signClass(netPnl))}>
-            {formatSignedCurrency(netPnl)}
-          </div>
-          <div className={cn("text-sm font-medium", signClass(returnPct))}>
-            ({formatPercent(returnPct, 2)})
-          </div>
+          <GoalProgressWidget 
+            transactions={transactions} 
+            currentEquity={Number(last?.portfolioValue ?? 0)} 
+          />
         </div>
       </div>
 

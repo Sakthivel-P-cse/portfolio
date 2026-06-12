@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body style="margin: 0; padding: 0;">
+    <div id="container" style="width: 400px; height: 300px;"></div>
+    <script>
+        const chart = LightweightCharts.createChart(document.getElementById('container'), {
+            layout: { background: { type: 'solid', color: '#000000' } }
+        });
+        const series = chart.addAreaSeries();
+        series.setData([
+            { time: '2018-12-22', value: 10, lineColor: '#FF0000' }, // RED
+            { time: '2018-12-23', value: 20, lineColor: '#00FF00' }, // GREEN
+            { time: '2018-12-24', value: 30, lineColor: '#0000FF' }, // BLUE
+        ]);
+        chart.timeScale().fitContent();
+    </script>
+</body>
+</html>
