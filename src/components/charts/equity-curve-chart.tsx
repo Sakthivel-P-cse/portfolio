@@ -633,7 +633,7 @@ export function EquityCurveChart({
       </div>
 
       {/* ── Chart + side panel ──────────────────────────────────────────── */}
-      <div className="mt-4 flex gap-4">
+      <div className="mt-4 flex flex-col gap-4 lg:flex-row">
         <div className="relative min-w-0 flex-1">
           <span className="absolute left-2 top-1 z-10 text-[11px] font-medium text-white/40">
             INR
@@ -679,7 +679,7 @@ export function EquityCurveChart({
         </div>
 
         {/* Right control panel */}
-        <aside className="hidden w-52 shrink-0 flex-col gap-5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 lg:flex">
+        <aside className="grid w-full shrink-0 grid-cols-1 gap-5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 sm:grid-cols-2 lg:flex lg:w-52 lg:flex-col">
           <div>
             <div className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-white/45">
               X-Axis Range
@@ -736,7 +736,7 @@ export function EquityCurveChart({
 
           <button
             onClick={resetAxis}
-            className="flex h-9 items-center justify-center gap-2 rounded-md border border-white/10 bg-white/[0.04] text-sm font-medium text-white/80 hover:bg-white/[0.08]"
+            className="flex h-9 items-center justify-center gap-2 rounded-md border border-white/10 bg-white/[0.04] text-sm font-medium text-white/80 hover:bg-white/[0.08] sm:col-span-2 lg:col-auto"
           >
             <RotateCcw className="size-3.5" /> Reset Axis
           </button>
