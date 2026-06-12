@@ -7,7 +7,7 @@ import type { TransactionDTO } from "@/types";
 import { cn } from "@/lib/utils";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import confetti from "canvas-confetti";
-import { Trophy, CheckCircle2 } from "lucide-react";
+import { Trophy, CheckCircle2, Pencil } from "lucide-react";
 
 interface GoalProgressWidgetProps {
   transactions: TransactionDTO[];
@@ -25,9 +25,29 @@ const EVENT_COLORS: Record<string, string> = {
 export function GoalProgressWidget({
   transactions,
   currentEquity,
-  targetEquity = 200000,
+  targetEquity: defaultTarget = 200000,
 }: GoalProgressWidgetProps) {
+  const [targetEquity, setTargetEquity] = useState(defaultTarget);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
   const [hasReachedGoal, setHasReachedGoal] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("goal_target_equity");
+    if (saved) {
+      const val = Number(saved);
+      if (!isNaN(val) && val > 0) setTargetEquity(val);
+    }
+  }, []);
+
+  const handleSaveTarget = () => {
+    const val = Number(editValue.replace(/[^0-9.-]+/g, ""));
+    if (!isNaN(val) && val > 0) {
+      setTargetEquity(val);
+      localStorage.setItem("goal_target_equity", val.toString());
+    }
+    setIsEditing(false);
+  };
 
   const progressPct = Math.min(100, Math.max(0, (currentEquity / targetEquity) * 100));
   const remaining = Math.max(0, targetEquity - currentEquity);
@@ -146,9 +166,36 @@ export function GoalProgressWidget({
             <span className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
               {formatCurrency(currentEquity)}
             </span>
-            <span className="text-sm font-medium text-white/40">
-              / {formatCurrency(targetEquity)}
-            </span>
+            {isEditing ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-white/40">/</span>
+                <input
+                  // eslint-disable-next-line jsx-a11y/autofocus
+                  autoFocus
+                  type="text"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={handleSaveTarget}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSaveTarget();
+                    if (e.key === "Escape") setIsEditing(false);
+                  }}
+                  className="w-24 rounded border border-white/20 bg-white/10 px-1 py-0.5 text-sm font-bold text-white outline-none focus:border-[#EAB308]/50"
+                />
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setEditValue(targetEquity.toString());
+                  setIsEditing(true);
+                }}
+                className="group flex items-center gap-1.5 text-sm font-medium text-white/40 transition-colors hover:text-white"
+                title="Edit Target Goal"
+              >
+                / {formatCurrency(targetEquity)}
+                <Pencil className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
+              </button>
+            )}
           </div>
         </div>
 
